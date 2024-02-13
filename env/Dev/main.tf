@@ -5,8 +5,8 @@ module "aws-dev" {
   sshKeys = "IaC-DEV"
   instance_name = "First Terraform Dev Instance"
   security_group_name = "general_group"
-}
-
-output "IP_DEV" {
-  value = module.aws-dev.public_ip
+  group_name = "Dev-ASG"
+  max_size = 0
+  min_size = 1
+  production = false
 }

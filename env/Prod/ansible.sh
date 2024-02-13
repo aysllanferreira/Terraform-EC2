@@ -1,0 +1,46 @@
+#!/bin/bash
+cd home/ubuntu
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py 
+sudo python3 get-pip.py
+sudo python3 pip install ansible
+tee -a playbook.yml > /dev/null <<EOT
+- hosts: localhost
+  tasks:
+    - name: Installing Python3 + virtualenv
+      apt:
+        pkg:
+          - python3
+          - virtualenv
+        update_cache: yes
+      become: yes
+    - name: Git Clone
+      ansible.builtin.git:
+        repo: https://github.com/alura-cursos/clientes-leo-api.git
+        dest: /home/ubuntu/tcc 
+        version: master 
+        force: yes
+    - name: Installing Django + Django rest
+      pip:
+        virtualenv: /home/ubuntu/tcc/venv
+        requirements: /home/ubuntu/tcc/requirements.txt
+    - name: Checking if project already exists
+      stat:
+        path: /home/ubuntu/tcc/setup/settings.py 
+      register: project_exists
+    - name: Starting Django server
+      shell: ". /home/ubuntu/tcc/venv/bin/activate; django-admin startproject setup /home/ubuntu/tcc"
+      when: not project_exists.stat.exists
+    - name: Updating settings host
+      lineinfile:
+        path: /home/ubuntu/tcc/setup/settings.py
+        regexp: "ALLOWED_HOSTS"
+        line: "ALLOWED_HOSTS = ['*']"
+        backrefs: yes
+    - name: Setup Database
+      shell: ". /home/ubuntu/tcc/venv/bin/activate; python /home/ubuntu/tcc/manage.py migrate"
+    - name: Loading initial data
+      shell: ". /home/ubuntu/tcc/venv/bin/activate; python /home/ubuntu/tcc/manage.py loaddata clientes.json"
+    - name: Starting Django server
+      shell: ". /home/ubuntu/tcc/venv/bin/activate; nohup python /home/ubuntu/tcc/manage.py runserver 0.0.0.0:8000 &"
+EOT
+ansible-playbook playbook.yml
