@@ -14,11 +14,17 @@ provider "aws" {
 }
 
 resource "aws_instance" "app_server" {
-  ami           = "ami-0e731c8a588258d0d"
+  ami           = "ami-0c7217cdde317cfec"
   instance_type = "t2.micro"
   key_name = "iac-terraform"
+  user_data = <<-EOF
+              #!/bin/bash
+              cd /home/ubuntu
+              echo "<h1>Hello, World</h1>" > index.html
+              nohup busybox httpd -f -p 8080 &
+              EOF
 
   tags = {
-    Name = "First Terraform Instance"
+    Name = "First Terraform"
   }
 }
